@@ -220,7 +220,6 @@ class SFTP(base_protocol.BaseProtocol):
                     log.msg(
                         parent + " [SFTP] Finished Uploading: " + self.path.decode()
                     )
-
                     if self.downloadEnabled:
                         # self.out.make_downloads_folder()
                         outfile = (self.downloadPath
