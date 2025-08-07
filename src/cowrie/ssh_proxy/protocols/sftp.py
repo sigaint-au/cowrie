@@ -28,8 +28,12 @@
 
 from __future__ import annotations
 
+import datetime
+import time
+
 from twisted.python import log
 from twisted.conch.ssh import filetransfer
+from cowrie.core.config import CowrieConfig
 
 from cowrie.ssh_proxy.protocols import base_protocol
 
@@ -87,9 +91,12 @@ class SFTP(base_protocol.BaseProtocol):
 
         self.clientPacket = base_protocol.BaseProtocol()
         self.serverPacket = base_protocol.BaseProtocol()
-
+        self.downloadPath: str = CowrieConfig.get("honeypot", "download_path")
         self.parent: str
         self.offset: int = 0
+        self.downloadEnabled: bool = CowrieConfig.getboolean(
+            "honeypot", "capture_files", fallback=True
+        )
 
     def parse_packet(self, parent: str, data: bytes) -> None:
         self.parent = parent
@@ -202,7 +209,6 @@ class SFTP(base_protocol.BaseProtocol):
 
         elif sftp_num == filetransfer.FXP_EXTENDED_REPLY:
             log.msg(parent + " [SFTP] Entered Command: " + self.command.decode())
-            # self.out.command_entered(self.uuid, self.command)
 
         elif sftp_num == filetransfer.FXP_CLOSE:
             if self.handle == self.extract_string():
@@ -215,14 +221,19 @@ class SFTP(base_protocol.BaseProtocol):
                         parent + " [SFTP] Finished Uploading: " + self.path.decode()
                     )
 
-                    # if self.out.cfg.getboolean(['download', 'passive']):
-                    #     # self.out.make_downloads_folder()
-                    #     outfile = self.out.downloadFolder + datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")\
-                    #     + "-" + self.path.split('/')[-1]
-                    #     f = open(outfile, 'wb')
-                    #     f.write(self.theFile)
-                    #     f.close()
-                    #     #self.out.file_downloaded((self.uuid, True, self.path, outfile, None))
+                    if self.downloadEnabled:
+                        # self.out.make_downloads_folder()
+                        outfile = (self.downloadPath
+                                   + time.strftime("%Y%m%d-%H%M%S")
+                                   + "-" + self.path.decode().split('/')[-1])
+                        f = open(outfile, 'wb')
+                        f.write(self.theFile)
+                        f.close()
+                        log.msg(
+                            eventid="cowrie.sftp.file_uploaded",
+                            format="Uploaded file: %(path)",
+                            path=outfile,
+                        )
 
         elif sftp_num == filetransfer.FXP_SYMLINK:
             self.command = (
