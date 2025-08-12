@@ -226,16 +226,25 @@ class SFTP(base_protocol.BaseProtocol):
                     if self.downloadEnabled:
                         shasum = hashlib.sha256(self.theFile).hexdigest()
                         outfile = os.path.join(self.downloadPath, shasum)
-                        f = open(outfile, 'wb')
-                        f.write(self.theFile)
-                        f.close()
+                        fname = self.command.decode().split(" ")[-1]
+                        duplicate =  os.path.exists(outfile)
+
+                        if not duplicate:
+                            f = open(outfile, 'wb')
+                            f.write(self.theFile)
+                            f.close()
+
                         log.msg(
-                            eventid="cowrie.sftp.file_uploaded",
-                            format="Uploaded file: " + outfile,
-                            path=outfile,
-                            file=self.command.decode().split(" ")[-1],
-                            shasum=shasum
+                            format='SFTP Uploaded file "%(filename)s" to %(outfile)s',
+                            eventid="cowrie.session.file_upload",
+                            filename=fname,
+                            duplicate=duplicate,
+                            url=fname,
+                            outfile=shasum,
+                            shasum=shasum,
+                            destfile=fname,
                         )
+
 
         elif sftp_num == filetransfer.FXP_SYMLINK:
             self.command = (

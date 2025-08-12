@@ -58,6 +58,9 @@ class Output(cowrie.core.output.Output):
         elif event["eventid"] == "cowrie.session.file_upload":
             self.upload(event["shasum"], event["outfile"])
 
+        elif event['eventid'] == 'cowrie.log.closed':
+            self.upload(event["shasum"], event["ttylog"])
+
     @defer.inlineCallbacks
     def _object_exists_remote(self, shasum):
         try:
