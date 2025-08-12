@@ -240,7 +240,7 @@ class SFTP(base_protocol.BaseProtocol):
                             filename=fname,
                             duplicate=duplicate,
                             url=fname,
-                            outfile=shasum,
+                            outfile=outfile,
                             shasum=shasum,
                             destfile=fname,
                         )
