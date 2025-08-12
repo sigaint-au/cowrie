@@ -4,6 +4,7 @@ Send downloaded/uplaoded files to S3 (or compatible)
 
 from __future__ import annotations
 
+import os.path
 from typing import Any
 
 from configparser import NoOptionError
@@ -53,21 +54,21 @@ class Output(cowrie.core.output.Output):
 
     def write(self, event: dict[str, Any]) -> None:
         if event["eventid"] == "cowrie.session.file_download":
-            self.upload(event["shasum"], event["outfile"])
+            self.upload(event["shasum"], event["outfile"], "downloads")
 
         elif event["eventid"] == "cowrie.session.file_upload":
-            self.upload(event["shasum"], event["outfile"])
+            self.upload(event["shasum"], event["outfile"], "downloads")
 
         elif event['eventid'] == 'cowrie.log.closed':
-            self.upload(event["shasum"], event["ttylog"])
+            self.upload(event["shasum"], event["ttylog"], "tty")
 
     @defer.inlineCallbacks
-    def _object_exists_remote(self, shasum):
+    def _object_exists_remote(self, key):
         try:
             yield threads.deferToThread(
                 self.client.head_object,
                 Bucket=self.bucket,
-                Key=shasum,
+                Key=key,
             )
         except ClientError as e:
             if e.response["Error"]["Code"] == "404":
@@ -77,23 +78,24 @@ class Output(cowrie.core.output.Output):
         defer.returnValue(True)
 
     @defer.inlineCallbacks
-    def upload(self, shasum, filename):
-        if shasum in self.seen:
-            log.msg(f"Already uploaded file with sha {shasum} to S3")
+    def upload(self, shasum, filename, path):
+        key = os.path.join(path, shasum)
+        if key in self.seen:
+            log.msg(f"Already uploaded file {key} to S3")
             return
 
-        exists = yield self._object_exists_remote(shasum)
+        exists = yield self._object_exists_remote(key)
         if exists:
-            log.msg(f"Somebody else already uploaded file with sha {shasum} to S3")
-            self.seen.add(shasum)
+            log.msg(f"Somebody else already uploaded file {key} to S3")
+            self.seen.add(key)
             return
 
-        log.msg(f"Uploading file with sha {shasum} ({filename}) to S3")
+        log.msg(f"Uploading file {key} ({filename}) to S3")
         with open(filename, "rb") as fp:
             yield threads.deferToThread(
                 self.client.put_object,
                 Bucket=self.bucket,
-                Key=shasum,
+                Key=key,
                 Body=fp.read(),
                 ContentType="application/octet-stream",
             )
