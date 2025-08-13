@@ -57,13 +57,13 @@ def ttylog_close(logfile: str, stamp: float) -> None:
     @param logfile: logfile name
     @param stamp: timestamp
     """
-    settings = {"colorify": 0, "output": logfile}
-    with open(logfile + ".tty", "ab") as f:
+    settings = {"colorify": 0, "output": logfile + ".asciinema"}
+    with open(logfile, "ab") as f:
         sec, usec = int(stamp), int(1000000 * (stamp - int(stamp)))
         f.write(struct.pack(TTYSTRUCT, OP_CLOSE, 0, 0, 0, sec, usec))
 
-    logfd = open(logfile + ".tty", "rb")
-    asciinema.playlog(logfd, settings)
+    with open(logfile, "rb") as f:
+        asciinema.playlog(f, settings)
 
 def ttylog_inputhash(logfile: str) -> str:
     """
