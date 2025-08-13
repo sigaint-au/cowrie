@@ -10,6 +10,7 @@ Should be compatible with user mode linux
 from __future__ import annotations
 
 import hashlib
+import os
 import struct
 
 from cowrie.scripts import asciinema
@@ -64,6 +65,8 @@ def ttylog_close(logfile: str, stamp: float) -> None:
 
     with open(logfile, "rb") as f:
         asciinema.playlog(f, settings)
+
+    os.rename(logfile + ".asciinema", logfile)
 
 def ttylog_inputhash(logfile: str) -> str:
     """

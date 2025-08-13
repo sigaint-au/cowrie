@@ -62,7 +62,6 @@ class Output(cowrie.core.output.Output):
         elif event['eventid'] == 'cowrie.log.closed':
             # TODO: Find a better way to upload both files.
             self.upload(event["shasum"], event["ttylog"], "tty")
-            self.upload(event["shasum"] + ".asciinema", event["ttylog"] + ".asciinema", "tty")
 
     @defer.inlineCallbacks
     def _object_exists_remote(self, key):
