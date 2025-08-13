@@ -63,7 +63,7 @@ def ttylog_close(logfile: str, stamp: float) -> None:
         f.write(struct.pack(TTYSTRUCT, OP_CLOSE, 0, 0, 0, sec, usec))
 
     logfd = open(logfile + ".tty", "rb")
-    asciinema.playlog(logfile, settings)
+    asciinema.playlog(logfd, settings)
 
 def ttylog_inputhash(logfile: str) -> str:
     """
